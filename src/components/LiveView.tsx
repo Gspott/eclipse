@@ -40,6 +40,48 @@ export function LiveView({
   const [viewport, setViewport] = useState({ width: 390, height: 680 });
 
   useEffect(() => {
+    const video = videoRef.current;
+    if (!video || !camera.stream) {
+      return;
+    }
+
+    console.info("[live-view] ensuring video element has stream", {
+      hasStream: Boolean(camera.stream),
+      tracks: camera.stream.getVideoTracks().length
+    });
+
+    video.muted = true;
+    video.playsInline = true;
+    video.autoplay = true;
+    video.setAttribute("playsinline", "true");
+    video.setAttribute("webkit-playsinline", "true");
+
+    if (video.srcObject !== camera.stream) {
+      video.srcObject = camera.stream;
+      console.info("[live-view] srcObject assigned from component effect");
+    }
+
+    const timeoutId = window.setTimeout(() => {
+      if (video.videoWidth === 0 || video.videoHeight === 0) {
+        console.warn("[live-view] video dimensions still zero, retrying play()", {
+          readyState: video.readyState
+        });
+        video.play().then(
+          () => console.info("[live-view] retry play ok"),
+          (error) => console.warn("[live-view] retry play failed", error)
+        );
+      }
+    }, 250);
+
+    video.play().then(
+      () => console.info("[live-view] play() ok from component effect"),
+      (error) => console.warn("[live-view] play() failed from component effect", error)
+    );
+
+    return () => window.clearTimeout(timeoutId);
+  }, [camera.stream, videoRef]);
+
+  useEffect(() => {
     const element = shellRef.current;
     if (!element) {
       return;

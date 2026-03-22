@@ -91,7 +91,8 @@ export default function App() {
     };
   }, [sunAt2030.altitudeDeg]);
 
-  const fallbackToSimulation = mode === "simulation" || orientation.permission !== "granted" || camera.permission === "denied";
+  const fallbackToSimulation =
+    mode === "simulation" || (!camera.stream && (orientation.permission !== "granted" || camera.permission === "denied"));
 
   const adjustHorizon = async () => {
     if (orientation.permission !== "granted") {
