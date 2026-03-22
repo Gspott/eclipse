@@ -1,0 +1,23 @@
+{
+  "name": "Eclipse Field Finder 2026",
+  "short_name": "Eclipse2026",
+  "description": "Visor de campo para localizar el Sol durante el eclipse solar del 12 de agosto de 2026 en España.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0c1118",
+  "theme_color": "#0c1118",
+  "orientation": "any",
+  "icons": [
+    {
+      "src": "/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml"
+    },
+    {
+      "src": "/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}
