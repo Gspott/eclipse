@@ -1,19 +1,7 @@
 import { useEffect, useMemo, useRef, useState, type RefObject } from "react";
-import { formatLocalTime } from "../lib/format";
 import { projectSunToViewport } from "../lib/projection";
-import { formatDeg } from "../lib/solar";
-import type {
-  AppSettings,
-  CalibrationState,
-  CameraState,
-  FrozenFrame,
-  HorizonAssessment,
-  HorizonProfile,
-  LocationSummary,
-  ManualLocation,
-  OrientationReading,
-  SunPosition
-} from "../lib/types";
+import { degreesToCardinal } from "../lib/solar";
+import type { CalibrationState, CameraState, ManualLocation, OrientationReading, SunPosition } from "../lib/types";
 
 type LiveViewProps = {
   videoRef: RefObject<HTMLVideoElement>;
@@ -21,26 +9,14 @@ type LiveViewProps = {
   orientation: OrientationReading;
   calibration: CalibrationState;
   location: ManualLocation;
-  sun: SunPosition;
-  summary: LocationSummary;
-  clock: { activeDate: Date; realNow: number };
-  horizonProfile: HorizonProfile;
-  onCapture: (frame: FrozenFrame | null) => void;
-  settings: AppSettings;
-  visibility: HorizonAssessment;
-  maximumTimestamp: number;
-  minimal: boolean;
+  sunAt1930: SunPosition;
+  sunAt2030: SunPosition;
+  scoutingStatus: {
+    label: "VISIBLE" | "JUSTO" | "TAPADO";
+    tone: "ok" | "warn" | "bad";
+    hint: string;
+  };
 };
-
-function getGuidanceText(deltaAz: number, deltaAlt: number, aligned: boolean) {
-  if (aligned) {
-    return "Alineado";
-  }
-
-  const horizontal = deltaAz > 0 ? `derecha ${Math.abs(deltaAz).toFixed(1)}°` : `izquierda ${Math.abs(deltaAz).toFixed(1)}°`;
-  const vertical = deltaAlt > 0 ? `sube ${Math.abs(deltaAlt).toFixed(1)}°` : `baja ${Math.abs(deltaAlt).toFixed(1)}°`;
-  return `${horizontal} · ${vertical}`;
-}
 
 export function LiveView({
   videoRef,
@@ -48,18 +24,12 @@ export function LiveView({
   orientation,
   calibration,
   location,
-  sun,
-  clock,
-  onCapture,
-  settings,
-  visibility,
-  maximumTimestamp,
-  minimal
+  sunAt1930,
+  sunAt2030,
+  scoutingStatus
 }: LiveViewProps) {
   const shellRef = useRef<HTMLDivElement | null>(null);
   const [viewport, setViewport] = useState({ width: 390, height: 680 });
-  const lastAlignedRef = useRef(false);
-  const lastVisibilityRef = useRef(visibility.state);
 
   useEffect(() => {
     const element = shellRef.current;
@@ -71,149 +41,69 @@ export function LiveView({
       if (!rect) {
         return;
       }
-      setViewport({
-        width: Math.max(240, rect.width),
-        height: Math.max(320, rect.height)
-      });
+      setViewport({ width: rect.width, height: rect.height });
     });
     observer.observe(element);
     return () => observer.disconnect();
   }, []);
 
-  const projection = useMemo(
-    () => projectSunToViewport(sun, orientation, calibration, viewport.width, viewport.height),
-    [sun, orientation, calibration, viewport.height, viewport.width]
+  const p1930 = useMemo(
+    () => projectSunToViewport(sunAt1930, orientation, calibration, viewport.width, viewport.height),
+    [sunAt1930, orientation, calibration, viewport]
   );
-  const aligned = projection.angularError <= settings.alignmentThresholdDeg;
-  const guidanceText =
-    orientation.heading === null ? "Orientación manual requerida" : getGuidanceText(projection.deltaAz, projection.deltaAlt, aligned);
-  const countdownMinutes = Math.round((maximumTimestamp - clock.activeDate.getTime()) / 60000);
-
-  useEffect(() => {
-    if (!settings.hapticsEnabled || !navigator.vibrate) {
-      lastAlignedRef.current = aligned;
-      lastVisibilityRef.current = visibility.state;
-      return;
-    }
-    if (aligned && !lastAlignedRef.current) {
-      navigator.vibrate([12, 24, 12]);
-    }
-    if (visibility.state === "visible" && lastVisibilityRef.current === "hidden") {
-      navigator.vibrate([20]);
-    }
-    lastAlignedRef.current = aligned;
-    lastVisibilityRef.current = visibility.state;
-  }, [aligned, settings.hapticsEnabled, visibility.state]);
-
-  const handleCapture = () => {
-    const video = videoRef.current;
-    if (!video || video.videoWidth === 0 || video.videoHeight === 0) {
-      return;
-    }
-    const canvas = document.createElement("canvas");
-    canvas.width = video.videoWidth;
-    canvas.height = video.videoHeight;
-    const context = canvas.getContext("2d");
-    if (!context) {
-      return;
-    }
-    context.drawImage(video, 0, 0, canvas.width, canvas.height);
-    onCapture({
-      dataUrl: canvas.toDataURL("image/jpeg", 0.82),
-      width: canvas.width,
-      height: canvas.height,
-      heading: orientation.heading ?? 0,
-      pitch: orientation.pitch ?? 0,
-      roll: orientation.roll ?? 0,
-      timestamp: clock.activeDate.getTime()
-    });
-  };
+  const p2030 = useMemo(
+    () => projectSunToViewport(sunAt2030, orientation, calibration, viewport.width, viewport.height),
+    [sunAt2030, orientation, calibration, viewport]
+  );
+  const horizonLine = useMemo(
+    () =>
+      projectSunToViewport(
+        { ...sunAt2030, altitudeDeg: 0, azimuthDeg: (orientation.heading ?? sunAt2030.azimuthDeg) + calibration.azimuthOffsetDeg },
+        orientation,
+        calibration,
+        viewport.width,
+        viewport.height
+      ),
+    [sunAt2030, orientation, calibration, viewport]
+  );
 
   return (
-    <section className={minimal ? "live-stage minimal" : "live-stage"}>
+    <section className="live-stage minimal">
       <div className="video-shell" ref={shellRef}>
         <video ref={videoRef} playsInline muted className="camera-feed" />
         {!camera.stream && (
           <div className="camera-fallback">
-            <p>{settings.lowPowerMode ? "Ahorro activo: abre cámara solo cuando haga falta." : "No hay vídeo activo."}</p>
+            <p>Sin cámara activa. Si Safari no concede permiso, usa simulación.</p>
             <button className="primary-button" onClick={() => camera.start()}>
-              Abrir cámara trasera
+              Abrir cámara
             </button>
-            {camera.error && <p className="error-text">{camera.error}</p>}
+            <button className="ghost-button" onClick={() => orientation.requestPermission()}>
+              Activar brújula
+            </button>
           </div>
         )}
 
         <div className="hud-layer">
-          <div className={aligned ? "reticle aligned" : "reticle"} />
-          <div className={aligned ? "target-ring active" : "target-ring"} />
-          <div
-            className="horizon-line"
-            style={{
-              transform: `translateY(${((orientation.pitch ?? 0) + calibration.horizonOffsetDeg) * -4}px) rotate(${orientation.roll ?? 0}deg)`
-            }}
-          />
-          <div
-            className={projection.withinFrame ? "sun-marker" : "sun-marker offscreen"}
-            style={{
-              left: `${Math.max(4, Math.min(viewport.width - 24, projection.x))}px`,
-              top: `${Math.max(4, Math.min(viewport.height - 24, projection.y))}px`
-            }}
-          />
+          <div className="simple-horizon" style={{ top: `${horizonLine.y}px` }} />
+          <svg className="trajectory-overlay" viewBox={`0 0 ${viewport.width} ${viewport.height}`} preserveAspectRatio="none">
+            <line x1={p1930.x} y1={p1930.y} x2={p2030.x} y2={p2030.y} stroke="#ffd05d" strokeWidth="4" />
+          </svg>
+          <div className="sun-marker sun-1930" style={{ left: `${p1930.x}px`, top: `${p1930.y}px` }} />
+          <div className="sun-marker sun-2030" style={{ left: `${p2030.x}px`, top: `${p2030.y}px` }} />
+
           <div className="hud-top">
-            <span className="pill">Hora {formatLocalTime(clock.activeDate.getTime())}</span>
-            <span className={`pill ${orientation.confidence === "low" ? "warn" : ""}`}>
-              Sensor {orientation.confidence}
-            </span>
-            <span className="pill">Az {formatDeg(sun.azimuthDeg, 0)}</span>
-            <span className="pill">Alt {formatDeg(sun.altitudeDeg, 1)}</span>
+            <span className="pill">19:30 {sunAt1930.altitudeDeg.toFixed(1)}°</span>
+            <span className={`pill ${orientation.confidence === "low" ? "warn" : ""}`}>Brújula {orientation.confidence}</span>
+            <span className="pill">20:30 {degreesToCardinal(sunAt2030.azimuthDeg)}</span>
           </div>
 
-          {!minimal && (
-            <div className="hud-bottom">
-              <div>
-                <strong>Apunta y busca</strong>
-                <p>{guidanceText}</p>
-              </div>
-              <div>
-                <strong>Visibilidad</strong>
-                <p>{visibility.label}</p>
-              </div>
-              <div>
-                <strong>Lugar</strong>
-                <p>{location.label}</p>
-              </div>
-            </div>
-          )}
-
-          <div className={minimal ? "eclipse-strip visible" : "eclipse-strip"}>
-            <strong>{aligned ? "Alineado" : "Ajusta"}</strong>
-            <span>H {projection.deltaAz > 0 ? "derecha" : "izquierda"} {Math.abs(projection.deltaAz).toFixed(1)}°</span>
-            <span>V {projection.deltaAlt > 0 ? "sube" : "baja"} {Math.abs(projection.deltaAlt).toFixed(1)}°</span>
-            <span>{visibility.label}</span>
-            <span>Máximo {countdownMinutes >= 0 ? `en ${countdownMinutes} min` : "ya pasado"}</span>
+          <div className="eclipse-strip visible">
+            <strong>{scoutingStatus.label}</strong>
+            <span>20:30 {sunAt2030.altitudeDeg.toFixed(1)}°</span>
+            <span>{degreesToCardinal(sunAt2030.azimuthDeg)}</span>
+            <span>{location.label}</span>
           </div>
-
-          <div className="arrow-strip">
-            <div className="arrow">{projection.deltaAz > 0 ? "→" : "←"}</div>
-            <div className="arrow-legend">{Math.abs(projection.deltaAz).toFixed(1)}°</div>
-          </div>
-
-          {!minimal && orientation.confidence === "low" && (
-            <div className="sensor-warning">Brújula poco fiable. Recalibra o usa orientación manual.</div>
-          )}
         </div>
-      </div>
-
-      <div className={minimal ? "action-bar compact" : "action-bar"}>
-        <button className="primary-button" onClick={() => camera.start()}>
-          {camera.stream ? "Reabrir cámara" : "Cámara trasera"}
-        </button>
-        <button className="ghost-button" onClick={() => orientation.requestPermission()}>
-          Orientación
-        </button>
-        <button className="ghost-button" onClick={handleCapture}>
-          Congelar
-        </button>
       </div>
     </section>
   );

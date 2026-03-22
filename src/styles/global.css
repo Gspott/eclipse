@@ -165,6 +165,14 @@ h3 {
   overflow: hidden;
 }
 
+.scouting-layout {
+  gap: 14px;
+}
+
+.scouting-card {
+  margin-top: 14px;
+}
+
 .panel-card,
 .simulation-card {
   padding: 16px;
@@ -332,6 +340,13 @@ h3 {
   border-top: 3px solid rgba(123, 224, 255, 0.8);
 }
 
+.simple-horizon {
+  position: absolute;
+  left: 0;
+  right: 0;
+  border-top: 3px solid rgba(123, 224, 255, 0.86);
+}
+
 .sun-marker {
   position: absolute;
   width: 22px;
@@ -341,6 +356,28 @@ h3 {
   border-radius: 50%;
   background: radial-gradient(circle, var(--accent-strong), #f29f32 70%, rgba(0, 0, 0, 0.18) 71%);
   box-shadow: 0 0 0 4px rgba(255, 231, 173, 0.18), 0 0 18px rgba(252, 189, 84, 0.7);
+}
+
+.sun-1930 {
+  width: 18px;
+  height: 18px;
+  margin-left: -9px;
+  margin-top: -9px;
+  background: radial-gradient(circle, #fff3c4, #f7b955 70%, rgba(0, 0, 0, 0.18) 71%);
+}
+
+.sun-2030 {
+  width: 24px;
+  height: 24px;
+  margin-left: -12px;
+  margin-top: -12px;
+}
+
+.trajectory-overlay {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
 }
 
 .sun-marker.offscreen {
@@ -550,6 +587,18 @@ textarea {
 
 .score-excelente {
   background: rgba(15, 139, 111, 0.14);
+}
+
+.score-ok {
+  background: rgba(15, 139, 111, 0.14);
+}
+
+.score-warn {
+  background: rgba(241, 179, 79, 0.18);
+}
+
+.score-bad {
+  background: rgba(217, 90, 66, 0.16);
 }
 
 .score-bueno {
