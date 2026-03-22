@@ -93,21 +93,6 @@ export default function App() {
 
   const fallbackToSimulation = mode === "simulation" || orientation.permission !== "granted" || camera.permission === "denied";
 
-  const adjustDirection = async () => {
-    if (orientation.permission !== "granted") {
-      await orientation.requestPermission();
-    }
-    if (orientation.heading === null) {
-      return;
-    }
-    setCalibration({
-      ...calibration,
-      azimuthOffsetDeg: ((sunAt2030.azimuthDeg - orientation.heading + 540) % 360) - 180,
-      lastSolarCalibrationTs: Date.now(),
-      estimatedPrecisionDeg: Math.max(1, Math.min(8, orientation.jitterDeg + 1.5))
-    });
-  };
-
   const adjustHorizon = async () => {
     if (orientation.permission !== "granted") {
       await orientation.requestPermission();
@@ -117,6 +102,7 @@ export default function App() {
     }
     setCalibration({
       ...calibration,
+      azimuthOffsetDeg: 0,
       pitchOffsetDeg: -orientation.pitch,
       lastSolarCalibrationTs: Date.now(),
       estimatedPrecisionDeg: Math.max(1, Math.min(8, orientation.jitterDeg + 1.5))
@@ -151,7 +137,6 @@ export default function App() {
               sunAt2030={sunAt2030}
               trajectorySamples={trajectorySamples}
               scoutingStatus={scoutingStatus}
-              onAdjustDirection={adjustDirection}
               onAdjustHorizon={adjustHorizon}
               onToggleMode={() => setMode(mode === "camera" ? "simulation" : "camera")}
             />
@@ -166,7 +151,6 @@ export default function App() {
               sunAt2030={sunAt2030}
               trajectorySamples={trajectorySamples}
               scoutingStatus={scoutingStatus}
-              onAdjustDirection={adjustDirection}
               onAdjustHorizon={adjustHorizon}
               onToggleMode={() => setMode(mode === "camera" ? "simulation" : "camera")}
             />

@@ -19,7 +19,6 @@ type LiveViewProps = {
   sunAt2030: SunPosition;
   trajectorySamples: SunPosition[];
   scoutingStatus: ScoutingStatus;
-  onAdjustDirection: () => void | Promise<void>;
   onAdjustHorizon: () => void | Promise<void>;
   onToggleMode: () => void;
 };
@@ -34,7 +33,6 @@ export function LiveView({
   sunAt2030,
   trajectorySamples,
   scoutingStatus,
-  onAdjustDirection,
   onAdjustHorizon,
   onToggleMode
 }: LiveViewProps) {
@@ -135,10 +133,7 @@ export function LiveView({
           </div>
 
           <div className="scouting-actions-overlay">
-            <button className="primary-button" onClick={onAdjustDirection}>
-              Ajustar dirección
-            </button>
-            <button className="ghost-button" onClick={onAdjustHorizon}>
+            <button className="primary-button" onClick={onAdjustHorizon}>
               Ajustar horizonte
             </button>
             <button className="ghost-button" onClick={onToggleMode}>

@@ -8,7 +8,6 @@ PWA mínima para scouting del eclipse solar del **12/08/2026** en **Talveila (So
 - Cámara trasera fullscreen.
 - Fallback automático a simulación si falla cámara o orientación.
 - Dos botones grandes:
-  - `Ajustar dirección`
   - `Ajustar horizonte`
   - `Cámara / Simulación`
 
@@ -29,9 +28,8 @@ PWA mínima para scouting del eclipse solar del **12/08/2026** en **Talveila (So
 1. Abre la app en HTTPS desde iPhone/Safari.
 2. Concede cámara y orientación si Safari lo pide.
 3. Mira la trayectoria sobre la cámara.
-4. Si la referencia no cuadra, apunta al lugar visual correcto y pulsa `Ajustar dirección`.
-5. Si el horizonte visual no coincide, apunta al horizonte real y pulsa `Ajustar horizonte`.
-6. Si el punto de las `20:30` cae detrás del relieve, ese sitio no sirve.
+4. Si el horizonte visual no coincide, apunta al horizonte real y pulsa `Ajustar horizonte`.
+5. Si el punto de las `20:30` cae detrás del relieve, ese sitio no sirve.
 
 ## Nota importante
 

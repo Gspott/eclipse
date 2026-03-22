@@ -35,7 +35,7 @@ export function projectSunToViewport(
   const pitch = orientation.pitch ?? 0;
   const roll = orientation.roll ?? 0;
 
-  const deltaAz = normalizeAngle(sun.azimuthDeg - (heading + calibration.azimuthOffsetDeg));
+  const deltaAz = normalizeAngle(sun.azimuthDeg - heading);
   const deltaAlt = sun.altitudeDeg - (pitch + calibration.pitchOffsetDeg);
 
   const halfHFov = calibration.horizontalFovDeg / 2;
@@ -104,7 +104,7 @@ export function buildHorizonPath(
   width: number,
   height: number
 ) {
-  const correctedHeading = (orientation.heading ?? 0) + calibration.azimuthOffsetDeg;
+  const correctedHeading = orientation.heading ?? 0;
   const targets: SunPosition[] = [];
   for (let offset = -90; offset <= 90; offset += 6) {
     targets.push({
