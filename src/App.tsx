@@ -8,7 +8,7 @@ import { useDeviceOrientation } from "./hooks/useDeviceOrientation";
 import { useGeolocation } from "./hooks/useGeolocation";
 import { useLocalStorage } from "./hooks/useLocalStorage";
 import { usePageVisibility } from "./hooks/usePageVisibility";
-import { getSunPosition, degreesToCardinal } from "./lib/solar";
+import { getSunPosition } from "./lib/solar";
 import {
   DEFAULT_APP_SETTINGS,
   DEFAULT_CALIBRATION,
@@ -134,6 +134,8 @@ export default function App() {
               sunAt1930={sunAt1930}
               sunAt2030={sunAt2030}
               scoutingStatus={scoutingStatus}
+              onAdjustDirection={adjustDirection}
+              onToggleMode={() => setMode(mode === "camera" ? "simulation" : "camera")}
             />
           ) : (
             <LiveView
@@ -145,53 +147,9 @@ export default function App() {
               sunAt1930={sunAt1930}
               sunAt2030={sunAt2030}
               scoutingStatus={scoutingStatus}
+              onAdjustDirection={adjustDirection}
+              onToggleMode={() => setMode(mode === "camera" ? "simulation" : "camera")}
             />
-          )}
-        </section>
-
-        <section className="panel-card scouting-card">
-          <div className="panel-header">
-            <div>
-              <p className="eyebrow">Lectura rápida</p>
-              <h2>{scoutingStatus.label}</h2>
-            </div>
-            <span className={`score-pill score-${scoutingStatus.tone}`}>{degreesToCardinal(sunAt2030.azimuthDeg)}</span>
-          </div>
-          <div className="info-grid">
-            <div className="metric-card">
-              <span>19:30</span>
-              <strong>{sunAt1930.altitudeDeg.toFixed(1)}°</strong>
-            </div>
-            <div className="metric-card">
-              <span>20:30</span>
-              <strong>{sunAt2030.altitudeDeg.toFixed(1)}°</strong>
-            </div>
-            <div className="metric-card">
-              <span>Dirección</span>
-              <strong>{degreesToCardinal(sunAt2030.azimuthDeg)}</strong>
-            </div>
-            <div className="metric-card">
-              <span>Ubicación</span>
-              <strong>{geo.location ? "GPS" : "Talveila"}</strong>
-            </div>
-          </div>
-          <p>{scoutingStatus.hint}</p>
-          <div className="action-bar">
-            <button className="primary-button" onClick={adjustDirection}>
-              Ajustar dirección
-            </button>
-            <button className="ghost-button" onClick={() => setMode(mode === "camera" ? "simulation" : "camera")}>
-              {mode === "camera" ? "Modo simulación" : "Modo cámara"}
-            </button>
-          </div>
-          <p className="muted">
-            Usa “Ajustar dirección” apuntando hacia la referencia visual donde esperas el Sol de las 20:30. La corrección
-            queda guardada.
-          </p>
-          {orientation.permission !== "granted" && (
-            <p className="muted">
-              En iPhone/Safari la brújula necesita permiso desde un toque. Si falla, la app sigue en modo simulación.
-            </p>
           )}
         </section>
       </main>

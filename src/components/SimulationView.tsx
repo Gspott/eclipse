@@ -1,18 +1,29 @@
 import { degreesToCardinal } from "../lib/solar";
 import type { ManualLocation, SunPosition } from "../lib/types";
 
+type ScoutingStatus = {
+  label: "VISIBLE" | "JUSTO" | "TAPADO";
+  tone: "ok" | "warn" | "bad";
+  hint: string;
+};
+
 type SimulationViewProps = {
   location: ManualLocation;
   sunAt1930: SunPosition;
   sunAt2030: SunPosition;
-  scoutingStatus: {
-    label: "VISIBLE" | "JUSTO" | "TAPADO";
-    tone: "ok" | "warn" | "bad";
-    hint: string;
-  };
+  scoutingStatus: ScoutingStatus;
+  onAdjustDirection: () => void;
+  onToggleMode: () => void;
 };
 
-export function SimulationView({ location, sunAt1930, sunAt2030, scoutingStatus }: SimulationViewProps) {
+export function SimulationView({
+  location,
+  sunAt1930,
+  sunAt2030,
+  scoutingStatus,
+  onAdjustDirection,
+  onToggleMode
+}: SimulationViewProps) {
   const p1930 = {
     x: 18,
     y: 86 - Math.max(0, sunAt1930.altitudeDeg) * 5
@@ -23,7 +34,7 @@ export function SimulationView({ location, sunAt1930, sunAt2030, scoutingStatus 
   };
 
   return (
-    <section className="simulation-card">
+    <section className="simulation-card scouting-sim-card">
       <div className="panel-header">
         <div>
           <p className="eyebrow">Modo simulación</p>
@@ -38,15 +49,15 @@ export function SimulationView({ location, sunAt1930, sunAt2030, scoutingStatus 
         <line x1={p1930.x} y1={p1930.y} x2={p2030.x} y2={p2030.y} stroke="#ffd05d" strokeWidth="2.2" />
         <circle cx={p1930.x} cy={p1930.y} r="2.4" fill="#f7b955" />
         <circle cx={p2030.x} cy={p2030.y} r="2.8" fill="#ffd05d" />
-        <text x={p1930.x - 8} y={p1930.y - 4} fill="#ffffff" fontSize="4">19:30</text>
-        <text x={p2030.x - 8} y={p2030.y - 4} fill="#ffffff" fontSize="4">20:30</text>
+        <text x={p1930.x - 8} y={p1930.y - 4} fill="#ffffff" fontSize="4">
+          19:30
+        </text>
+        <text x={p2030.x - 8} y={p2030.y - 4} fill="#ffffff" fontSize="4">
+          20:30
+        </text>
       </svg>
 
       <div className="simulation-grid">
-        <div className="metric-card">
-          <span>19:30</span>
-          <strong>{sunAt1930.altitudeDeg.toFixed(1)}°</strong>
-        </div>
         <div className="metric-card">
           <span>20:30</span>
           <strong>{sunAt2030.altitudeDeg.toFixed(1)}°</strong>
@@ -56,11 +67,23 @@ export function SimulationView({ location, sunAt1930, sunAt2030, scoutingStatus 
           <strong>{degreesToCardinal(sunAt2030.azimuthDeg)}</strong>
         </div>
         <div className="metric-card">
+          <span>19:30</span>
+          <strong>{sunAt1930.altitudeDeg.toFixed(1)}°</strong>
+        </div>
+        <div className="metric-card">
           <span>Lugar</span>
           <strong>{location.label}</strong>
         </div>
       </div>
       <p>{scoutingStatus.hint}</p>
+      <div className="action-bar">
+        <button className="primary-button" onClick={onAdjustDirection}>
+          Ajustar dirección
+        </button>
+        <button className="ghost-button" onClick={onToggleMode}>
+          Cámara
+        </button>
+      </div>
     </section>
   );
 }

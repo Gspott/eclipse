@@ -173,6 +173,17 @@ h3 {
   margin-top: 14px;
 }
 
+.scouting-actions-overlay {
+  position: absolute;
+  left: 10px;
+  right: 10px;
+  bottom: 76px;
+  display: flex;
+  gap: 10px;
+  justify-content: center;
+  pointer-events: auto;
+}
+
 .panel-card,
 .simulation-card {
   padding: 16px;
@@ -629,6 +640,10 @@ textarea {
 
   .topbar-actions,
   .hud-bottom {
+    flex-direction: column;
+  }
+
+  .scouting-actions-overlay {
     flex-direction: column;
   }
 
