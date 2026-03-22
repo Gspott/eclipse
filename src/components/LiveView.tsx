@@ -77,10 +77,16 @@ export function LiveView({
   return (
     <section className="live-stage minimal">
       <div className="video-shell" ref={shellRef}>
-        <video ref={videoRef} playsInline muted className="camera-feed" />
+        <video ref={videoRef} playsInline muted autoPlay className="camera-feed" />
         {!camera.stream && (
           <div className="camera-fallback">
-            <p>Sin cámara activa. Si Safari no concede permiso, usa simulación.</p>
+            <p>
+              {camera.loading
+                ? "Iniciando cámara"
+                : camera.error
+                  ? camera.error
+                  : "Sin cámara activa. Si Safari no concede permiso, usa simulación."}
+            </p>
             <button className="primary-button" onClick={() => camera.start()}>
               Abrir cámara
             </button>

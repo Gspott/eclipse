@@ -13,6 +13,7 @@ export type CameraState = {
   stream: MediaStream | null;
   permission: PermissionStateName;
   error: string | null;
+  loading: boolean;
   activeDeviceId: string | null;
   availableDevices: MediaDeviceInfo[];
   start: (deviceId?: string) => Promise<void>;
