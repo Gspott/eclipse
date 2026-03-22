@@ -11,13 +11,26 @@ export function normalizeAngle(value: number) {
 const HEMISPHERE_CLIP_DEG = 95;
 const VERTICAL_CLIP_PAD_DEG = 8;
 
+export type ProjectedTarget = {
+  x: number;
+  y: number;
+  withinFrame: boolean;
+  inFrontHemisphere: boolean;
+  withinVerticalClip: boolean;
+  shouldRender: boolean;
+  deltaAz: number;
+  deltaAlt: number;
+  angularError: number;
+  roll: number;
+};
+
 export function projectSunToViewport(
   sun: SunPosition,
   orientation: OrientationReading,
   calibration: CalibrationState,
   width: number,
   height: number
-) {
+): ProjectedTarget {
   const heading = orientation.heading ?? 0;
   const pitch = orientation.pitch ?? 0;
   const roll = orientation.roll ?? 0;
@@ -51,4 +64,55 @@ export function projectSunToViewport(
     angularError,
     roll
   };
+}
+
+export function buildProjectedPath(
+  targets: SunPosition[],
+  orientation: OrientationReading,
+  calibration: CalibrationState,
+  width: number,
+  height: number
+) {
+  const segments: { x: number; y: number }[][] = [];
+  let current: { x: number; y: number }[] = [];
+
+  targets.forEach((target) => {
+    const projected = projectSunToViewport(target, orientation, calibration, width, height);
+    const visible = projected.shouldRender && projected.withinFrame;
+
+    if (visible) {
+      current.push({ x: projected.x, y: projected.y });
+      return;
+    }
+
+    if (current.length >= 2) {
+      segments.push(current);
+    }
+    current = [];
+  });
+
+  if (current.length >= 2) {
+    segments.push(current);
+  }
+
+  return segments;
+}
+
+export function buildHorizonPath(
+  orientation: OrientationReading,
+  calibration: CalibrationState,
+  width: number,
+  height: number
+) {
+  const correctedHeading = (orientation.heading ?? 0) + calibration.azimuthOffsetDeg;
+  const targets: SunPosition[] = [];
+  for (let offset = -90; offset <= 90; offset += 6) {
+    targets.push({
+      azimuthDeg: correctedHeading + offset,
+      altitudeDeg: 0,
+      hourAngleDeg: 0,
+      declinationDeg: 0
+    });
+  }
+  return buildProjectedPath(targets, orientation, calibration, width, height);
 }

@@ -11,8 +11,10 @@ type SimulationViewProps = {
   location: ManualLocation;
   sunAt1930: SunPosition;
   sunAt2030: SunPosition;
+  trajectorySamples: SunPosition[];
   scoutingStatus: ScoutingStatus;
-  onAdjustDirection: () => void;
+  onAdjustDirection: () => void | Promise<void>;
+  onAdjustHorizon: () => void | Promise<void>;
   onToggleMode: () => void;
 };
 
@@ -22,6 +24,7 @@ export function SimulationView({
   sunAt2030,
   scoutingStatus,
   onAdjustDirection,
+  onAdjustHorizon,
   onToggleMode
 }: SimulationViewProps) {
   const p1930 = {
@@ -79,6 +82,9 @@ export function SimulationView({
       <div className="action-bar">
         <button className="primary-button" onClick={onAdjustDirection}>
           Ajustar dirección
+        </button>
+        <button className="ghost-button" onClick={onAdjustHorizon}>
+          Ajustar horizonte
         </button>
         <button className="ghost-button" onClick={onToggleMode}>
           Cámara

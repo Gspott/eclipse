@@ -20,7 +20,6 @@ import {
 
 export default function App() {
   const [mode, setMode] = useLocalStorage<"camera" | "simulation">("scouting-mode", "camera");
-  const [theme, setTheme] = useLocalStorage<"day" | "night">("theme", "day");
   const [calibration, setCalibration] = useLocalStorage<CalibrationState>("active-calibration", DEFAULT_CALIBRATION);
   const [settings] = useLocalStorage<AppSettings>("app-settings", {
     ...DEFAULT_APP_SETTINGS,
@@ -59,16 +58,26 @@ export default function App() {
     () => getSunPosition(activeLocation.latitude, activeLocation.longitude, ECLIPSE_SCOUTING_TIMES.maximum),
     [activeLocation.latitude, activeLocation.longitude]
   );
+  const trajectorySamples = useMemo(() => {
+    const samples = [];
+    const start = ECLIPSE_SCOUTING_TIMES.precheck.getTime();
+    const end = ECLIPSE_SCOUTING_TIMES.maximum.getTime();
+    for (let timestamp = start; timestamp <= end; timestamp += 5 * 60000) {
+      samples.push(getSunPosition(activeLocation.latitude, activeLocation.longitude, new Date(timestamp)));
+    }
+    return samples;
+  }, [activeLocation.latitude, activeLocation.longitude]);
 
   const scoutingStatus = useMemo<{ label: "VISIBLE" | "JUSTO" | "TAPADO"; tone: "ok" | "warn" | "bad"; hint: string }>(() => {
-    if (sunAt2030.altitudeDeg > 1.5) {
+    const marginDeg = sunAt2030.altitudeDeg;
+    if (marginDeg > 3) {
       return {
         label: "VISIBLE",
         tone: "ok" as const,
         hint: "Si la loma queda por debajo del punto de las 20:30, el sitio sirve."
       };
     }
-    if (sunAt2030.altitudeDeg > 0.2) {
+    if (marginDeg >= 0) {
       return {
         label: "JUSTO",
         tone: "warn" as const,
@@ -82,19 +91,33 @@ export default function App() {
     };
   }, [sunAt2030.altitudeDeg]);
 
-  const fallbackToSimulation =
-    mode === "simulation" ||
-    orientation.permission !== "granted" ||
-    orientation.confidence === "low" ||
-    camera.permission === "denied";
+  const fallbackToSimulation = mode === "simulation" || orientation.permission !== "granted" || camera.permission === "denied";
 
-  const adjustDirection = () => {
+  const adjustDirection = async () => {
+    if (orientation.permission !== "granted") {
+      await orientation.requestPermission();
+    }
     if (orientation.heading === null) {
       return;
     }
     setCalibration({
       ...calibration,
       azimuthOffsetDeg: ((sunAt2030.azimuthDeg - orientation.heading + 540) % 360) - 180,
+      lastSolarCalibrationTs: Date.now(),
+      estimatedPrecisionDeg: Math.max(1, Math.min(8, orientation.jitterDeg + 1.5))
+    });
+  };
+
+  const adjustHorizon = async () => {
+    if (orientation.permission !== "granted") {
+      await orientation.requestPermission();
+    }
+    if (orientation.pitch === null) {
+      return;
+    }
+    setCalibration({
+      ...calibration,
+      pitchOffsetDeg: -orientation.pitch,
       lastSolarCalibrationTs: Date.now(),
       estimatedPrecisionDeg: Math.max(1, Math.min(8, orientation.jitterDeg + 1.5))
     });
@@ -108,20 +131,13 @@ export default function App() {
   }, [camera.permission, camera.stream, mode, pageVisible]);
 
   return (
-    <div className={`app-shell theme-${theme}`}>
+    <div className="app-shell theme-day">
       <header className="topbar">
         <div>
           <p className="eyebrow">12 agosto 2026 · Talveila, Soria</p>
           <h1>Scout Eclipse Talveila</h1>
         </div>
-        <div className="topbar-actions">
-          <button className="ghost-button" onClick={() => setTheme(theme === "day" ? "night" : "day")}>
-            {theme === "day" ? "Modo noche" : "Modo día"}
-          </button>
-          <button className="ghost-button" onClick={() => setMode(mode === "camera" ? "simulation" : "camera")}>
-            {mode === "camera" ? "Modo simulación" : "Modo cámara"}
-          </button>
-        </div>
+        <span className="pill">19:30 → 20:30</span>
       </header>
 
       <SafetyNotice />
@@ -133,8 +149,10 @@ export default function App() {
               location={activeLocation}
               sunAt1930={sunAt1930}
               sunAt2030={sunAt2030}
+              trajectorySamples={trajectorySamples}
               scoutingStatus={scoutingStatus}
               onAdjustDirection={adjustDirection}
+              onAdjustHorizon={adjustHorizon}
               onToggleMode={() => setMode(mode === "camera" ? "simulation" : "camera")}
             />
           ) : (
@@ -146,8 +164,10 @@ export default function App() {
               location={activeLocation}
               sunAt1930={sunAt1930}
               sunAt2030={sunAt2030}
+              trajectorySamples={trajectorySamples}
               scoutingStatus={scoutingStatus}
               onAdjustDirection={adjustDirection}
+              onAdjustHorizon={adjustHorizon}
               onToggleMode={() => setMode(mode === "camera" ? "simulation" : "camera")}
             />
           )}
